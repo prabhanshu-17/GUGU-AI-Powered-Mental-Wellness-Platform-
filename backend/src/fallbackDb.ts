@@ -422,3 +422,4 @@ async function executeSql(sql: string, params: any[], mode: 'run' | 'all'): Prom
     // Default empty result for any other unhandled queries
     return { results: [], meta: { changes: 0, last_row_id: 0 } };
 }
+

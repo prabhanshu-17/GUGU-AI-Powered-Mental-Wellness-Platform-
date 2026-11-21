@@ -19,7 +19,8 @@ const SignIn: React.FC = () => {
     setError('');
     setIsLoading(true);
 
-    const url = isLogin ? import.meta.env.VITE_API_URL + '/api/auth/login' : import.meta.env.VITE_API_URL + '/api/auth/register';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8787').replace(/\/+$/, '');
+    const url = isLogin ? `${baseUrl}/api/auth/login` : `${baseUrl}/api/auth/register`;
 
     // In login mode, we don't need name or role from form.
     const payload = isLogin
@@ -33,10 +34,16 @@ const SignIn: React.FC = () => {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(response.status ? `Backend error (${response.status}): Please verify backend URL and deployment.` : 'Could not parse response from server.');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.error || `Authentication failed (${response.status})`);
       }
 
       login(data.token, data.user);

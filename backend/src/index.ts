@@ -621,4 +621,11 @@ app.get('/', (c) => c.json({
     timestamp: new Date().toISOString()
 }));
 
+app.get('/api', (c) => c.json({
+    status: 'ok',
+    service: 'Gugu Backend API',
+    database: c.env?.DB ? 'ready' : 'fallback-ready',
+    timestamp: new Date().toISOString()
+}));
+
 export default app;
