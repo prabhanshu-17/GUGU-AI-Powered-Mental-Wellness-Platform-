@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './auth';
+import { createFallbackD1 } from './fallbackDb';
 
 // --- Types ---
 
@@ -31,6 +32,19 @@ app.use('*', cors({
 app.onError((err, c) => {
     console.error(`[Server Error] ${err.message}`, err);
     return c.json({ error: err.message || 'Internal Server Error' }, 500);
+});
+
+// Environment & Database fallback middleware (for Vercel / serverless runtimes)
+app.use('*', async (c, next) => {
+    if (!c.env) (c as any).env = {};
+    if (!c.env.JWT_SECRET) {
+        const globalEnv = (globalThis as any).process?.env;
+        c.env.JWT_SECRET = globalEnv?.JWT_SECRET || 'gugu-secret-key-123!@#';
+    }
+    if (!c.env.DB) {
+        c.env.DB = createFallbackD1();
+    }
+    await next();
 });
 
 // Auth middleware (applied per-route, not globally)
@@ -600,6 +614,11 @@ app.patch('/api/therapy-requests/:id/schedule', authMiddleware, async (c) => {
 // Health Check
 // =====================
 
-app.get('/', (c) => c.json({ status: 'ok', service: 'Gugu Backend API' }));
+app.get('/', (c) => c.json({
+    status: 'ok',
+    service: 'Gugu Backend API',
+    database: c.env?.DB ? 'ready' : 'fallback-ready',
+    timestamp: new Date().toISOString()
+}));
 
 export default app;
